@@ -37,11 +37,9 @@ function createPeer() {
   };
 
   peerConnection.ontrack = e => {
-    const audio = document.createElement("audio");
+    const audio = new Audio();
     audio.srcObject = e.streams[0];
-    audio.autoplay = true;
-    audio.controls = true;
-    document.body.appendChild(audio);
+    audio.play();
   };
 }
 
