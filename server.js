@@ -8,43 +8,16 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const rooms = {};
-
 io.on("connection", socket => {
 
-  socket.on("join-room", ({ room, username }) => {
+  socket.broadcast.emit("user-connected");
 
-    socket.join(room);
-
-    socket.room = room;
-    socket.username = username;
-
-    if (!rooms[room]) rooms[room] = [];
-
-    rooms[room].push(username);
-
-    // notify others someone joined
-    socket.to(room).emit("user-joined");
-
-    // update user list
-    io.to(room).emit("room-users", rooms[room]);
+  socket.on("ready", () => {
+    socket.broadcast.emit("user-connected");
   });
 
-  // 🔑 WebRTC signaling relay
-  socket.on("signal", ({ room, signal }) => {
-    socket.to(room).emit("signal", signal);
-  });
-
-  socket.on("disconnect", () => {
-
-    const room = socket.room;
-    const username = socket.username;
-
-    if (!room || !rooms[room]) return;
-
-    rooms[room] = rooms[room].filter(u => u !== username);
-
-    io.to(room).emit("room-users", rooms[room]);
+  socket.on("signal", data => {
+    socket.broadcast.emit("signal", data);
   });
 
 });

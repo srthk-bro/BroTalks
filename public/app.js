@@ -1,94 +1,68 @@
 const socket = io();
 
-let peerConnection;
+let peer;
 let localStream;
-let room;
 
 const config = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      {
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject"
-      }
-    ]
-  };
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
+};
 
-async function joinRoom() {
+async function start() {
 
-    room = document.getElementById("room").value;
-    const username = document.getElementById("username").value;
-  
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  
-    createPeer();
-  
-    socket.emit("join-room", { room, username });
-  }
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-function createPeer() {
-
-  peerConnection = new RTCPeerConnection(config);
+  peer = new RTCPeerConnection(config);
 
   localStream.getTracks().forEach(track => {
-    peerConnection.addTrack(track, localStream);
+    peer.addTrack(track, localStream);
   });
 
-  peerConnection.onicecandidate = e => {
-    if (e.candidate) {
-      socket.emit("signal", { room, signal: { candidate: e.candidate } });
-    }
-  };
-
-  peerConnection.ontrack = e => {
+  peer.ontrack = e => {
     const audio = document.createElement("audio");
     audio.srcObject = e.streams[0];
     audio.autoplay = true;
-    audio.controls = true;
     document.body.appendChild(audio);
   };
+
+  peer.onicecandidate = e => {
+    if (e.candidate) {
+      socket.emit("signal", { candidate: e.candidate });
+    }
+  };
+
+  socket.emit("ready");
 }
 
-socket.on("user-joined", async () => {
+socket.on("user-connected", async () => {
 
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
 
-  socket.emit("signal", { room, signal: { offer } });
+  socket.emit("signal", { offer });
 });
 
-socket.on("room-users", users => {
+socket.on("signal", async data => {
 
-    const list = document.getElementById("users");
-  
-    list.innerHTML = "";
-  
-    users.forEach(user => {
-      const li = document.createElement("li");
-      li.textContent = user;
-      list.appendChild(li);
-    });
-  
-  });
+  if (data.offer) {
 
-socket.on("signal", async signal => {
+    await peer.setRemoteDescription(data.offer);
 
-  if (signal.offer) {
+    const answer = await peer.createAnswer();
+    await peer.setLocalDescription(answer);
 
-    await peerConnection.setRemoteDescription(signal.offer);
-
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-
-    socket.emit("signal", { room, signal: { answer } });
+    socket.emit("signal", { answer });
   }
 
-  if (signal.answer) {
-    await peerConnection.setRemoteDescription(signal.answer);
+  if (data.answer) {
+    await peer.setRemoteDescription(data.answer);
   }
 
-  if (signal.candidate && peerConnection) {
-    await peerConnection.addIceCandidate(signal.candidate);
+  if (data.candidate) {
+    await peer.addIceCandidate(data.candidate);
   }
+
 });
+
+start();
