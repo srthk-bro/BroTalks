@@ -12,7 +12,7 @@ const config = {
 
 async function joinRoom() {
 
-    const room = document.getElementById("room").value;
+    room = document.getElementById("room").value;
     const username = document.getElementById("username").value;
   
     socket.emit("join-room", { room, username });
