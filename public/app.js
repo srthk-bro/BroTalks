@@ -15,12 +15,12 @@ async function joinRoom() {
     room = document.getElementById("room").value;
     const username = document.getElementById("username").value;
   
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  
+    createPeer();
+  
     socket.emit("join-room", { room, username });
-
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-  createPeer();
-}
+  }
 
 function createPeer() {
 
@@ -37,9 +37,11 @@ function createPeer() {
   };
 
   peerConnection.ontrack = e => {
-    const audio = new Audio();
+    const audio = document.createElement("audio");
     audio.srcObject = e.streams[0];
-    audio.play();
+    audio.autoplay = true;
+    audio.controls = true;
+    document.body.appendChild(audio);
   };
 }
 
@@ -81,7 +83,7 @@ socket.on("signal", async signal => {
     await peerConnection.setRemoteDescription(signal.answer);
   }
 
-  if (signal.candidate) {
+  if (signal.candidate && peerConnection) {
     await peerConnection.addIceCandidate(signal.candidate);
   }
 });
