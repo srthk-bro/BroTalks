@@ -23,7 +23,16 @@ io.on("connection", socket => {
 
     rooms[room].push(username);
 
+    // notify others someone joined
+    socket.to(room).emit("user-joined");
+
+    // update user list
     io.to(room).emit("room-users", rooms[room]);
+  });
+
+  // 🔑 WebRTC signaling relay
+  socket.on("signal", ({ room, signal }) => {
+    socket.to(room).emit("signal", signal);
   });
 
   socket.on("disconnect", () => {
