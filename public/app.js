@@ -42,9 +42,11 @@ function createPeer() {
   };
 
   peerConnection.ontrack = e => {
-    const audio = new Audio();
+    const audio = document.createElement("audio");
     audio.srcObject = e.streams[0];
-    audio.play();
+    audio.autoplay = true;
+    audio.controls = true;
+    document.body.appendChild(audio);
   };
 }
 
