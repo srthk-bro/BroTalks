@@ -6,10 +6,14 @@
 </head>
 <body>
 
-<h1>Voice Chat</h1>
+    <h1>Voice Chat</h1>
 
-<input id="room" placeholder="Room name">
-<button onclick="joinRoom()">Join</button>
+    <input id="username" placeholder="Your name">
+    <input id="room" placeholder="Room name">
+    <button onclick="joinRoom()">Join</button>
+    
+    <h3>Users in room</h3>
+    <ul id="users"></ul>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="app.js"></script>

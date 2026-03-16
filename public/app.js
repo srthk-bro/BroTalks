@@ -12,9 +12,10 @@ const config = {
 
 async function joinRoom() {
 
-  room = document.getElementById("room").value;
-
-  socket.emit("join-room", room);
+    const room = document.getElementById("room").value;
+    const username = document.getElementById("username").value;
+  
+    socket.emit("join-room", { room, username });
 
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -49,6 +50,20 @@ socket.on("user-joined", async () => {
 
   socket.emit("signal", { room, signal: { offer } });
 });
+
+socket.on("room-users", users => {
+
+    const list = document.getElementById("users");
+  
+    list.innerHTML = "";
+  
+    users.forEach(user => {
+      const li = document.createElement("li");
+      li.textContent = user;
+      list.appendChild(li);
+    });
+  
+  });
 
 socket.on("signal", async signal => {
 

@@ -1,5 +1,3 @@
-// server.js
-
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -10,24 +8,40 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
+const rooms = {};
+
 io.on("connection", socket => {
 
-    console.log("User connected:", socket.id);
+  socket.on("join-room", ({ room, username }) => {
 
-    socket.on("join-room", room => {
-        socket.join(room);
-        socket.to(room).emit("user-joined");
-    });
+    socket.join(room);
 
-    socket.on("signal", data => {
-        socket.to(data.room).emit("signal", data.signal);
-    });
+    socket.room = room;
+    socket.username = username;
 
-    socket.on("disconnect", () => {
-        console.log("User disconnected");
-    });
+    if (!rooms[room]) rooms[room] = [];
+
+    rooms[room].push(username);
+
+    io.to(room).emit("room-users", rooms[room]);
+  });
+
+  socket.on("disconnect", () => {
+
+    const room = socket.room;
+    const username = socket.username;
+
+    if (!room || !rooms[room]) return;
+
+    rooms[room] = rooms[room].filter(u => u !== username);
+
+    io.to(room).emit("room-users", rooms[room]);
+  });
+
 });
 
-server.listen(3000, "0.0.0.0", () => {
-    console.log("Server running on port 3000");
-  });
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log("Server running");
+});
